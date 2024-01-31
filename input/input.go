@@ -10,6 +10,7 @@ import (
 	lr "github.com/libretro/ludo/libretro"
 	ntf "github.com/libretro/ludo/notifications"
 	"github.com/libretro/ludo/settings"
+	"github.com/libretro/ludo/steamapi"
 	"github.com/libretro/ludo/video"
 )
 
@@ -65,6 +66,17 @@ func joystickCallback(joy glfw.Joystick, event glfw.PeripheralEvent) {
 	}
 }
 
+func steamInputCallback(handle uint64, event steamapi.InputEvent) {
+	switch event {
+	case steamapi.Connected:
+		ntf.DisplayAndLog(ntf.Info, "Input", "Joystick #%d plugged.", handle)
+	case steamapi.Disconnected:
+		ntf.DisplayAndLog(ntf.Info, "Input", "Joystick #%d unplugged.", handle)
+	default:
+		ntf.DisplayAndLog(ntf.Warning, "Input", "Joystick #%d unhandled event: %d.", handle, event)
+	}
+}
+
 var vid *video.Video
 
 // Init initializes the input package
@@ -74,6 +86,8 @@ func Init(v *video.Video) {
 		log.Println("Failed to update mappings")
 	}
 	glfw.SetJoystickCallback(joystickCallback)
+
+	steamapi.SetInputCallback(steamInputCallback)
 }
 
 func floatToAnalog(v float32) int16 {

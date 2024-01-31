@@ -3,6 +3,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/libretro/ludo/steamapi"
 	"log"
 	"os"
 	"runtime"
@@ -75,10 +76,13 @@ func runLoop(vid *video.Video, m *menu.Menu) {
 
 func main() {
 	err := settings.Load()
+
 	if err != nil {
 		log.Println("[Settings]: Loading failed:", err)
 		log.Println("[Settings]: Using default settings")
 	}
+
+	steamapi.Init()
 
 	// ExitOnError causes flags to quit after displaying help.
 	// (--help counts as an error)
@@ -150,4 +154,6 @@ func main() {
 
 	// Unload and deinit in the core.
 	core.Unload()
+
+	steamapi.Unload()
 }
