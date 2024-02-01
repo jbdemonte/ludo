@@ -18,7 +18,6 @@ func Init() {
 	if !steamworks.Init() {
 		panic("steamworks.Init failed")
 	}
-	steamworks.SteamInput().Init(true)
 
 	go listenControllers()
 }
@@ -60,7 +59,7 @@ func isInHandleList(source []steamworks.InputHandle_t, handle steamworks.InputHa
 }
 
 func isNewHandle(handle steamworks.InputHandle_t) bool {
-	return isInHandleList(inputHandles, handle)
+	return !isInHandleList(inputHandles, handle)
 }
 
 func addHandle(handle steamworks.InputHandle_t) {
@@ -81,13 +80,58 @@ func removeHandle(handle steamworks.InputHandle_t) {
 	fInputCallback(uint64(handle), Disconnected)
 }
 
+func steamRunCallbacks() {
+	for !shouldUnload {
+		steamworks.RunCallbacks()
+		time.Sleep(25 * time.Millisecond)
+	}
+}
+
+func readControllers() {
+	steamInput := steamworks.SteamInput()
+	actionSetHandle := steamInput.GetActionSetHandle("GameControls")
+
+	getDigitalBinding()
+
+	for !shouldUnload {
+		for _, inputHandle := range inputHandles {
+			steamInput.ActivateActionSet(inputHandle, actionSetHandle)
+
+		}
+		time.Sleep(1 * time.Millisecond)
+	}
+}
+
+// debug
+func Addlog(ln string) {
+	f, err := os.OpenFile("steamwork.log.txt", os.O_RDWR|os.O_CREATE|os.O_APPEND, 0666)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+
+	f.WriteString(ln)
+	f.WriteString("\n")
+}
+
 func listenControllers() {
+
+	steamInput := steamworks.SteamInput()
+
+	steamInput.Init(false)
+
+	go steamRunCallbacks()
+
+	go readControllers()
+
 	for !shouldUnload {
 		if !ready {
 			continue
 		}
 
-		var handles = steamworks.SteamInput().GetConnectedControllers()
+		var handles = steamInput.GetConnectedControllers()
+
+		//ntf.DisplayAndLog(ntf.Info, "Input", "handles len %d", len(handles))
 
 		for _, handle := range handles {
 			if handle > 0 && isNewHandle(handle) {
@@ -101,6 +145,18 @@ func listenControllers() {
 			}
 		}
 
-		time.Sleep(100)
+		time.Sleep(100 * time.Millisecond)
 	}
+}
+
+func Joystick(index SteamController) SteamController {
+	if index > JoystickLast() {
+		return 0
+	}
+	return index
+}
+
+// respect the glfw approach, JoystickLast is not usable and is helpful for loops
+func JoystickLast() SteamController {
+	return SteamController(len(inputHandles))
 }

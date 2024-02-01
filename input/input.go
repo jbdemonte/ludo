@@ -66,14 +66,15 @@ func joystickCallback(joy glfw.Joystick, event glfw.PeripheralEvent) {
 	}
 }
 
+// steamInputCallback is triggered when a steam input controller is plugged
 func steamInputCallback(handle uint64, event steamapi.InputEvent) {
 	switch event {
 	case steamapi.Connected:
-		ntf.DisplayAndLog(ntf.Info, "Input", "Joystick #%d plugged.", handle)
+		ntf.DisplayAndLog(ntf.Info, "SteamInput", "SteamInput #%d plugged.", handle)
 	case steamapi.Disconnected:
-		ntf.DisplayAndLog(ntf.Info, "Input", "Joystick #%d unplugged.", handle)
+		ntf.DisplayAndLog(ntf.Info, "SteamInput", "SteamInput #%d unplugged.", handle)
 	default:
-		ntf.DisplayAndLog(ntf.Warning, "Input", "Joystick #%d unhandled event: %d.", handle, event)
+		ntf.DisplayAndLog(ntf.Warning, "SteamInput", "SteamInput #%d unhandled event: %d.", handle, event)
 	}
 }
 
@@ -97,7 +98,7 @@ func floatToAnalog(v float32) int16 {
 // pollJoypads process joypads of all players
 func pollJoypads(state States, analogState AnalogStates) (States, AnalogStates) {
 	p := 0
-	for joy := glfw.Joystick(0); joy < glfw.JoystickLast; joy++ {
+	for joy := glfw.Joystick(0); joy < glfw.JoystickLast && p < MaxPlayers; joy++ {
 		if !joy.IsGamepad() {
 			continue
 		}
@@ -143,6 +144,20 @@ func pollJoypads(state States, analogState AnalogStates) (States, AnalogStates) 
 		p++
 	}
 
+	for joy := steamapi.Joystick(0); joy < steamapi.JoystickLast() && p < MaxPlayers; joy++ {
+		joyState := joy.GetDigitalState()
+
+		//ntf.DisplayAndLog(ntf.Info, "SteamInput", "Button A : %b", joyState[steamapi.ButtonA].State)
+
+		for k, v := range steamInputBinds {
+			if joyState[k].State {
+				state[p][v] = 1
+			}
+		}
+
+		p++
+	}
+
 	return state, analogState
 }
 
@@ -182,7 +197,7 @@ func Poll() {
 	NewState = pollKeyboard(NewState)
 	Pressed, Released = getPressedReleased(NewState, OldState)
 
-	// Store the old input state for comparisions
+	// Store the old input state for comparisons
 	OldState = NewState
 }
 
