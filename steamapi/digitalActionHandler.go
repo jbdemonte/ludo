@@ -1,6 +1,8 @@
 package steamapi
 
-import "github.com/hajimehoshi/go-steamworks"
+import (
+	"github.com/hajimehoshi/go-steamworks"
+)
 
 type Action int
 
