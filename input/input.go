@@ -144,18 +144,21 @@ func pollJoypads(state States, analogState AnalogStates) (States, AnalogStates) 
 		p++
 	}
 
-	for joy := steamapi.Joystick(0); joy < steamapi.JoystickLast() && p < MaxPlayers; joy++ {
+	for joy := steamapi.Joystick(0); joy < steamapi.JoystickLast(); joy++ {
+
+		if !joy.IsConnected() {
+			continue
+		}
+
 		joyState := joy.GetDigitalState()
 
 		//ntf.DisplayAndLog(ntf.Info, "SteamInput", "Button A : %b", joyState[steamapi.ButtonA].State)
 
 		for k, v := range steamInputBinds {
 			if joyState[k].State {
-				state[p][v] = 1
+				state[joy][v] = 1
 			}
 		}
-
-		p++
 	}
 
 	return state, analogState

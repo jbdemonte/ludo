@@ -18,7 +18,13 @@ func Init() {
 		panic("steamworks.Init failed")
 	}
 
-	go run()
+	steamworks.SteamInput().Init(false)
+
+	go runCallbacks()
+
+	go getHandles()
+
+	go listenControllers()
 }
 
 func Unload() {
@@ -47,15 +53,17 @@ func Addlog(ln string) {
 	}
 	defer f.Close()
 
-	f.WriteString(ln)
-	f.WriteString("\n")
+	f.WriteString(ln + "\n")
 }
 
 // when no controllers are connected on startup GetActionSetHandle returns 0 (a bug?)
 // so, we need to add a workaround to support hot plugged controllers
-func ensureActionSetIsDefined() {
+func getHandles() {
 	for !isActionSetDefined() {
 		time.Sleep(50 * time.Millisecond)
+		if shouldUnload {
+			return
+		}
 		getActionSetHandle()
 	}
 
@@ -63,33 +71,15 @@ func ensureActionSetIsDefined() {
 	getDigitalBinding()
 }
 
-func run() {
-	steamInput := steamworks.SteamInput()
-
-	steamInput.Init(false)
-
-	go runCallbacks()
-
-	go ensureActionSetIsDefined()
+func listenControllers() {
 
 	for !shouldUnload {
-		if !ready {
+		if !isActionSetDefined() {
+			time.Sleep(10 * time.Millisecond)
 			continue
 		}
 
-		handles := steamInput.GetConnectedControllers()
-
-		for _, handle := range handles {
-			if handle > 0 && isNewHandle(handle) {
-				addHandle(handle)
-			}
-		}
-
-		for _, handle := range inputHandles {
-			if !isInHandleList(handles, handle) {
-				removeHandle(handle)
-			}
-		}
+		updateControllerList()
 
 		time.Sleep(100 * time.Millisecond)
 	}

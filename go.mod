@@ -28,4 +28,8 @@ require (
 	gopkg.in/yaml.v3 v3.0.0 // indirect
 )
 
+replace (
+	github.com/hajimehoshi/go-steamworks v0.0.0-20231029064622-d8bdd4105652 => ..\go-steamworks
+)
+
 go 1.13

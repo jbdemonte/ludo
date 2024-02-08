@@ -5,7 +5,11 @@ import "github.com/hajimehoshi/go-steamworks"
 type SteamController uint
 
 func (controller SteamController) handle() steamworks.InputHandle_t {
-	return inputHandles[controller]
+	return controllerForGamepadIndex[int(controller)]
+}
+
+func (controller SteamController) IsConnected() bool {
+	return controllerForGamepadIndex[int(controller)] > 0
 }
 
 func (controller SteamController) GetDigitalState() DigitalState {
@@ -21,7 +25,7 @@ func Joystick(index SteamController) SteamController {
 	return index
 }
 
-// respect the glfw approach, JoystickLast is not usable and is helpful for loops
+// embrace the glfw approach, JoystickLast is not usable and is helpful for loops
 func JoystickLast() SteamController {
-	return SteamController(len(inputHandles))
+	return SteamController(MaxSteamInputConnected)
 }
